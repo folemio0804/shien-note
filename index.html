@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>支援記録ノート</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<style>
+/* Layout: 入力画面だけの1カラム。日付、子どもごとの大きなカード（名前→話す→メモ）、いちばん下に大きな「記録をつくる」。設定は右上の小さなリンクの先。 */
+:root{
+  color-scheme:light;
+  --bg:#EDF3F0;--surface:#FFFFFF;--surface2:#F5F9F7;--ink:#1B2F28;--ink2:#4F645D;--line:#CBDCD4;
+  --green:#1E7F6B;--green-deep:#14584A;--green-soft:#E1F0EB;--on-green:#FFFFFF;
+  --accent:#C65A2E;--on-accent:#FFFFFF;--danger:#B8483A;--on-danger:#FFFFFF;--danger-soft:#F8E4E0;
+  --tag1:#F6C6C0;--tag2:#F7E3A1;--tag3:#BFDDEE;--tag4:#CFE8C4;--tag5:#DCD1F0;--tag6:#F4CBDD;
+  --shadow:0 6px 24px rgba(32,55,47,.09);
+  --font-display:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  --font-body:"Noto Sans JP","Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI","Yu Gothic",Meiryo,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme:dark;
+    --bg:#121B18;--surface:#1B2723;--surface2:#22302B;--ink:#EAF3EF;--ink2:#A9BDB5;--line:#334540;
+    --green:#35A98F;--green-deep:#8AD9C4;--green-soft:#1F3A33;--on-green:#06211B;
+    --accent:#EE9468;--on-accent:#2A1206;--danger:#EE8C7D;--on-danger:#2A0E0A;--danger-soft:#3B2220;
+    --tag1:#8A4E48;--tag2:#8A7A35;--tag3:#3F6F8A;--tag4:#527A45;--tag5:#6A5B8E;--tag6:#8A4F6B;
+    --shadow:0 6px 24px rgba(0,0,0,.35);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:17px;line-height:1.75;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-top:max(6px,env(safe-area-inset-top,0px));
+}
+.wrap{max-width:680px;margin:0 auto;padding-bottom:150px}
+button,input,textarea{font:inherit;color:inherit}
+h1,h2{font-family:var(--font-display);margin:0}
+[hidden]{display:none!important}
+.view{display:none}
+.view.active{display:block}
+
+header.app{display:flex;align-items:center;gap:10px;padding:10px 2px 4px}
+header.app h1{font-size:21px;font-weight:700;letter-spacing:.02em;line-height:1.3;flex:1;min-width:0}
+.gear{border:none;background:transparent;color:var(--ink2);cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-size:12.5px;padding:8px;border-radius:10px;min-height:40px}
+.gear:hover{background:var(--surface)}
+.day{font-family:var(--font-display);font-size:20px;font-weight:700;line-height:1.3;margin:2px 2px 10px}
+.banner{background:var(--green-soft);border:2px solid var(--green);border-radius:14px;padding:12px 14px;font-size:15.5px;margin-bottom:14px;line-height:1.7}
+.banner button{margin-top:8px;border:none;background:var(--green);color:var(--on-green);font-weight:700;border-radius:10px;padding:10px 16px;min-height:44px;cursor:pointer;font-size:15px}
+
+.child{background:var(--surface);border-radius:20px;box-shadow:var(--shadow);padding:16px 14px;margin-bottom:16px;border-top:7px solid var(--tagc,var(--line))}
+.row1{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.badge{width:32px;height:32px;border-radius:50%;background:var(--tagc,var(--line));display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--ink);flex:none}
+.child input.name{flex:1;min-width:0;border:none;border-bottom:2px dashed var(--line);background:transparent;font-size:20px;font-weight:700;padding:8px 2px;border-radius:0}
+.child input.name:focus{outline:none;border-bottom-color:var(--green)}
+.child input.name::placeholder{color:var(--ink2);opacity:.65;font-weight:500}
+.iconbtn{border:none;background:var(--surface2);color:var(--ink2);cursor:pointer;min-width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none;font-size:13px;font-weight:700;padding:0 10px}
+.iconbtn:hover{background:var(--line)}
+.iconbtn.arm{background:var(--danger);color:var(--on-danger)}
+.micbig{width:100%;border:none;cursor:pointer;background:var(--green);color:var(--on-green);border-radius:18px;min-height:68px;padding:12px 18px;font-family:var(--font-display);font-size:21px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 6px 16px rgba(20,88,74,.28);position:relative}
+.micbig:hover{background:var(--green-deep);color:var(--bg)}
+.micbig.rec{background:var(--danger);color:var(--on-danger);box-shadow:none}
+.micbig.rec::after{content:"";position:absolute;inset:-5px;border-radius:22px;border:3px solid var(--danger);animation:pulse 1.2s ease-out infinite}
+@keyframes pulse{0%{opacity:.85;transform:scale(.985)}100%{opacity:0;transform:scale(1.04)}}
+.guide{display:flex;gap:12px;align-items:flex-start;background:var(--green-soft);border:2px solid var(--green);border-radius:16px;padding:14px;margin-top:10px;font-size:16.5px;line-height:1.7}
+.guide svg{flex:none;color:var(--green-deep);margin-top:3px}
+.memoarea{display:block;width:100%;min-height:170px;resize:vertical;border:2px solid var(--line);border-radius:14px;background:var(--surface2);padding:14px;font-size:18px;line-height:1.8;margin-bottom:12px}
+.memoarea:focus{outline:none;border-color:var(--green);background:var(--surface)}
+.memoarea::placeholder{color:var(--ink2);opacity:.7}
+.addchild{width:100%;border:2px dashed var(--line);background:transparent;color:var(--green-deep);border-radius:18px;padding:14px;font-size:17px;font-weight:700;cursor:pointer;min-height:56px}
+.addchild:hover{background:var(--surface);border-color:var(--green)}
+.linkbtn{display:block;margin:14px auto 0;background:transparent;border:none;color:var(--ink2);font-size:13.5px;cursor:pointer;text-decoration:underline;padding:10px}
+
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:40;pointer-events:none;display:flex;justify-content:center;
+  padding:0 max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.fab{pointer-events:auto;width:min(680px,100%);border:none;background:var(--accent);color:var(--on-accent);cursor:pointer;border-radius:20px;min-height:68px;font-size:22px;font-weight:700;font-family:var(--font-display);box-shadow:0 10px 24px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;gap:10px}
+.fab:hover{filter:brightness(.95)}
+
+.backrow{display:flex;align-items:center;gap:10px;padding:10px 2px 8px}
+.backbtn{border:1.5px solid var(--line);background:var(--surface);cursor:pointer;border-radius:12px;min-height:46px;padding:8px 16px;font-weight:700;font-size:15px}
+.backrow h1{font-size:19px}
+.lede{font-size:14px;color:var(--ink2);margin:0 2px 12px}
+.panel{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+.panel h2{font-size:16.5px;font-weight:700;margin-bottom:4px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;line-height:1.4}
+.panel h2 .mini{font-family:var(--font-body);font-size:12px;font-weight:500;color:var(--ink2)}
+.note{font-size:13.5px;color:var(--ink2);margin:0 0 10px;line-height:1.7}
+.note a{color:var(--green-deep);font-weight:700}
+.seg{display:flex;border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
+.seg button{flex:1;border:none;background:var(--surface2);padding:10px 4px;font-size:14px;font-weight:700;color:var(--ink2);cursor:pointer;min-height:46px}
+.seg button.on{background:var(--green);color:var(--on-green)}
+.seg button+button{border-left:1.5px solid var(--line)}
+.refitem{border:1.5px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px;background:var(--surface2)}
+.refitem .rh{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.field{width:100%;border:1.5px solid var(--line);border-radius:8px;padding:10px;font-size:15px;background:var(--surface)}
+.refitem input{flex:1;min-width:0;border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;font-size:15px;background:var(--surface)}
+.refitem textarea,.panel textarea.free{display:block;width:100%;min-height:130px;resize:vertical;border:1.5px solid var(--line);border-radius:8px;padding:10px;font-size:15px;line-height:1.7;background:var(--surface)}
+.panel textarea.free{min-height:84px}
+.field:focus,.refitem input:focus,.refitem textarea:focus,.panel textarea.free:focus{outline:none;border-color:var(--green)}
+.privacy{font-size:13px;color:var(--ink2);background:var(--surface2);border-radius:10px;padding:10px 12px;margin:10px 0 0;line-height:1.75}
+.steps{list-style:none;counter-reset:st;margin:0;padding:0}
+.steps li{display:flex;gap:12px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:14.5px;align-items:flex-start}
+.steps li:last-child{border-bottom:none}
+.steps li::before{counter-increment:st;content:counter(st);width:26px;height:26px;flex:none;border-radius:50%;background:var(--green);color:var(--on-green);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;margin-top:1px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn{border:none;cursor:pointer;font-weight:700;border-radius:12px;padding:11px 16px;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px}
+.btn.ghost{background:var(--surface2);color:var(--ink);border:1.5px solid var(--line)}
+.btn.ghost:hover{background:var(--line)}
+.btn.green{background:var(--green);color:var(--on-green)}
+.btn.green:hover{background:var(--green-deep);color:var(--bg)}
+.btn.accent{background:var(--accent);color:var(--on-accent)}
+.btn[disabled]{opacity:.55;cursor:default}
+.importarea{display:block;width:100%;min-height:84px;border:1.5px solid var(--line);border-radius:8px;padding:10px;font-size:13px;margin-top:10px;resize:vertical;background:var(--surface)}
+.importarea:focus{outline:none;border-color:var(--green)}
+.keyrow{display:flex;gap:8px;flex-wrap:wrap}
+.keyrow .field{flex:1;min-width:200px}
+
+.sheet{position:fixed;inset:0;background:rgba(10,24,19,.5);z-index:60}
+.sheet .card{position:absolute;left:0;right:0;bottom:0;max-height:94%;background:var(--bg);border-radius:22px 22px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.25);display:flex;flex-direction:column;
+  padding:14px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));overflow:auto}
+.sheet .inner{width:100%;max-width:680px;margin:0 auto;display:flex;flex-direction:column;min-height:0}
+.sh{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.sh b{font-family:var(--font-display);font-size:19px}
+.sh .x{margin-left:auto}
+.hint{font-size:14px;color:var(--ink2);margin:0 0 8px;line-height:1.7}
+.loading{display:flex;align-items:center;gap:10px;padding:8px 2px;color:var(--ink2);font-size:15px}
+.spin{width:24px;height:24px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--green);animation:spin .9s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+textarea.out{display:block;width:100%;min-height:42vh;border:2px solid var(--line);border-radius:14px;background:var(--surface);padding:14px;font-size:17px;line-height:1.9;resize:vertical}
+textarea.out:focus{outline:none;border-color:var(--green)}
+.acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.acts .btn.green,.acts .btn.accent{flex:1;min-width:140px;min-height:58px;font-size:18px}
+.followup{display:flex;gap:8px;margin-top:10px}
+.followup input{flex:1;min-width:0;border:2px solid var(--line);border-radius:12px;padding:10px 12px;font-size:16px;background:var(--surface)}
+.followup input:focus{outline:none;border-color:var(--green)}
+.toast{position:fixed;left:50%;bottom:calc(112px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(8px);background:var(--ink);color:var(--bg);border-radius:999px;padding:12px 22px;font-size:15px;font-weight:700;z-index:80;opacity:0;pointer-events:none;transition:.25s;max-width:calc(100% - 32px);text-align:center}
+.toast.on{opacity:.97;transform:translateX(-50%) translateY(0)}
+:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <section class="view active" id="view-main">
+    <header class="app">
+      <h1>支援記録ノート</h1>
+      <button class="gear" id="openSet" type="button" aria-label="設定を開く">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>
+        設定
+      </button>
+    </header>
+    <div class="day" id="dayLabel"></div>
+
+    <div id="children"></div>
+    <button class="addchild" id="addChild" type="button">＋ 子どもを追加する</button>
+    <button class="linkbtn" id="clearAll" type="button">メモをすべて空にする（次の日に使う）</button>
+  </section>
+
+  <section class="view" id="view-set">
+    <div class="backrow">
+      <button class="backbtn" id="closeSet" type="button">← もどる</button>
+      <h1>設定</h1>
+    </div>
+    <p class="lede">はじめに一度そろえておく画面です。保存先は、この端末の中だけです。</p>
+
+    <div class="panel">
+      <h2>Geminiのキー <span class="mini">記録を自動で書くために必要</span></h2>
+      <p class="note"><a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> で、無料のキー（AIza…で始まる文字）を作って、ここに貼ってください。</p>
+      <div class="keyrow">
+        <input class="field" id="keyInput" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="AIza…">
+        <button class="btn green" id="keySave" type="button">保存</button>
+      </div>
+      <p class="note" id="keyState" style="margin:8px 0 0"></p>
+      <div class="btnrow"><button class="btn ghost" id="keyDel" type="button">キーを消す</button></div>
+      <p class="privacy">「記録をつくる」を押したときだけ、そのときのメモ・見本・書き方メモが、GoogleのGeminiに送られます。無料のキーでは、送った内容が提供元のサービス改善に使われることがあります。利用者さんは、下の名前だけで入力してください。</p>
+    </div>
+
+    <div class="panel">
+      <h2>子どもの呼び方 <span class="mini">記録の中の表記</span></h2>
+      <div class="seg" id="callSeg">
+        <button type="button" data-v="auto" class="on">メモから判断</button>
+        <button type="button" data-v="chan">ちゃん</button>
+        <button type="button" data-v="kun">くん</button>
+        <button type="button" data-v="san">さん</button>
+      </div>
+      <p class="note" style="margin:8px 0 0">「メモから判断」は、メモに出てくる呼び方に合わせます。分からないときは「さん」にして、記録の末尾に［要確認］をつけます。</p>
+    </div>
+
+    <div class="panel">
+      <h2>書き方の見本 <span class="mini">過去の記録を最大5件</span></h2>
+      <p class="note">文体・長さ・構成の参考にします。文章はそのまま写さず、毎回ちがう表現で書きます。名字は省いて、下の名前だけにして貼ってください。</p>
+      <div id="refs"></div>
+      <button class="addchild" id="addRef" type="button" style="min-height:48px;font-size:15px">＋ 過去の記録を貼る</button>
+    </div>
+
+    <div class="panel">
+      <h2>書き方メモ <span class="mini">任意</span></h2>
+      <p class="note">例：「文末は『〜でした』が自然」「活動名は◇で見出しにする」</p>
+      <textarea class="free" id="styleNote" placeholder="気をつけたいことを自由に書けます"></textarea>
+    </div>
+
+    <div class="panel">
+      <h2>使い方</h2>
+      <ol class="steps">
+        <li><div>子どものカードの「話して入力する」を押して、様子と気づきを話します。</div></li>
+        <li><div>いちばん下の「記録をつくる」を押すと、Geminiが見本を参考に、一人ずつ別の表現で記録を書きます。</div></li>
+        <li><div>できた記録は、画面の中で直せます。「ぜんぶコピー」で日報などに貼れます。</div></li>
+      </ol>
+      <p class="privacy"><b>話して入力できないとき</b>　メモの場所を押すと出るキーボードの、マイクのマークを押して話します。Windowsは Windowsキー＋H、Macは Fnキーを2回押します。</p>
+    </div>
+
+    <div class="panel">
+      <h2>詳しい設定 <span class="mini">ふだんは触りません</span></h2>
+      <p class="note">使うモデル名です。動かなくなったときだけ、変えてください。</p>
+      <input class="field" id="modelInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="gemini-3.8-flash">
+      <h2 style="margin-top:16px">設定のバックアップ <span class="mini">キーは含みません</span></h2>
+      <div class="btnrow"><button class="btn ghost" id="expCopy" type="button">設定をコピー</button></div>
+      <textarea class="importarea" id="importArea" placeholder="コピーした設定をここに貼り付け"></textarea>
+      <div class="btnrow"><button class="btn ghost" id="impBtn" type="button">読み込んで入れ替える</button></div>
+    </div>
+  </section>
+</div>
+
+<div class="dock" id="dock">
+  <button class="fab" id="fabBtn" type="button">
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l4-1L20 7.5a2.1 2.1 0 0 0-3-3L5.5 16z"/></svg>
+    記録をつくる
+  </button>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="card">
+    <div class="inner">
+      <div class="sh">
+        <b>できあがった記録</b>
+        <button class="iconbtn x" id="sheetClose" type="button" aria-label="閉じる">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <p class="hint" id="sheetHint"></p>
+      <div class="loading" id="loading" hidden>
+        <span class="spin" aria-hidden="true"></span>
+        <span>Geminiが書いています…</span>
+      </div>
+      <textarea class="out" id="outArea" spellcheck="false" aria-label="できあがった記録"></textarea>
+      <div class="acts">
+        <button class="btn accent" id="againBtn" type="button">✨ AIで自動生成</button>
+        <button class="btn green" id="copyBtn" type="button">ぜんぶコピー</button>
+      </div>
+      <div class="followup" id="followRow" hidden>
+        <input id="followInput" placeholder="直したい点を書いて「修正」（例：もっと短く）">
+        <button class="btn accent" id="followBtn" type="button">修正</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+var LSKEY="shien_note_gemini_v1";
+var TAGVARS=["--tag1","--tag2","--tag3","--tag4","--tag5","--tag6"];
+var MAXREF=5,MAXCARD=12;
+var DEFAULT_MODEL="gemini-3.8-flash";
+var FALLBACK_MODELS=["gemini-3.8-flash"];
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function toast(m){var t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove("on")},2600)}
+var WD=["日","月","火","水","木","金","土"];
+function dateHead(){var d=new Date();return "— "+d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日("+WD[d.getDay()]+") —"}
+(function(){var d=new Date();$("dayLabel").textContent=d.getFullYear()+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日（"+WD[d.getDay()]+"）"})();
+
+/* ---------- state ---------- */
+var store={children:[{id:uid(),name:"",memo:""}],refs:[],callMode:"auto",styleNote:"",geminiKey:"",geminiModel:DEFAULT_MODEL};
+function save(){try{localStorage.setItem(LSKEY,JSON.stringify(store))}catch(e){}}
+function load(){
+  try{
+    var raw=localStorage.getItem(LSKEY);if(!raw)return;
+    var d=JSON.parse(raw);if(!d||typeof d!=="object")return;
+    if(Array.isArray(d.children)){
+      store.children=d.children.filter(function(c){return c&&typeof c==="object"}).map(function(c){return{id:c.id||uid(),name:String(c.name||""),memo:String(c.memo||"")}});
+      if(!store.children.length)store.children=[{id:uid(),name:"",memo:""}];
+    }
+    if(Array.isArray(d.refs))store.refs=d.refs.filter(function(r){return r&&typeof r==="object"}).slice(0,MAXREF).map(function(r){return{id:r.id||uid(),label:String(r.label||""),text:String(r.text||"")}});
+    if(d.callMode)store.callMode=d.callMode;
+    if(typeof d.styleNote==="string")store.styleNote=d.styleNote;
+    if(typeof d.geminiKey==="string")store.geminiKey=d.geminiKey;
+    if(d.geminiModel)store.geminiModel=String(d.geminiModel);
+  }catch(e){}
+}
+
+/* ---------- cards ---------- */
+var MIC='<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+function renderChildren(){
+  stopRec();
+  var box=$("children");box.innerHTML="";
+  store.children.forEach(function(c,i){
+    var el=document.createElement("div");
+    el.className="child";
+    el.style.setProperty("--tagc","var("+TAGVARS[i%TAGVARS.length]+")");
+    el.innerHTML=
+      '<div class="row1"><span class="badge">'+(i+1)+'</span>'+
+      '<input class="name" id="cname-'+esc(c.id)+'" aria-label="下の名前" placeholder="下の名前（例：ひなた）" value="'+esc(c.name)+'">'+
+      '<button class="iconbtn del" type="button" aria-label="このカードを消す">消す</button></div>'+
+      '<textarea class="memoarea" id="cmemo-'+esc(c.id)+'" aria-label="様子と気づきのメモ" placeholder="ここに文字が入ります。直接うつこともできます。\n例：ハイタッチで登園できた。製作では息が強くてコマが飛んだが、持ち方を変えて「まわった！」と喜んだ。">'+esc(c.memo)+'</textarea>'+
+      '<button class="micbig" type="button">'+MIC+'<span class="miclabel">話して入力する</span></button>'+
+      '<div class="guide" hidden>'+MIC.replace('width="30" height="30"','width="34" height="34"')+'<div class="guidetext"></div></div>';
+    el.querySelector(".name").addEventListener("input",function(){c.name=this.value;save()});
+    el.querySelector(".memoarea").addEventListener("input",function(){c.memo=this.value;save()});
+    var del=el.querySelector(".del"),armT=null;
+    del.addEventListener("click",function(){
+      if(!del.classList.contains("arm")){del.classList.add("arm");del.textContent="本当に消す";armT=setTimeout(function(){del.classList.remove("arm");del.textContent="消す"},3500);return}
+      clearTimeout(armT);
+      if(store.children.length===1){c.name="";c.memo=""}else{store.children.splice(i,1)}
+      save();renderChildren();
+    });
+    el.querySelector(".micbig").addEventListener("click",function(){toggleMic(c,el)});
+    box.appendChild(el);
+  });
+}
+$("addChild").addEventListener("click",function(){
+  if(store.children.length>=MAXCARD){toast("カードは"+MAXCARD+"枚までです");return}
+  var c={id:uid(),name:"",memo:""};store.children.push(c);save();renderChildren();
+  var els=$("children").children,el=els[els.length-1];
+  if(el){el.scrollIntoView({behavior:"smooth",block:"center"});var n=el.querySelector(".name");if(n)n.focus()}
+});
+var clearArmed=false;
+$("clearAll").addEventListener("click",function(){
+  var b=this;
+  if(!clearArmed){clearArmed=true;b.textContent="もう一度押すと、全員のメモが空になります";setTimeout(function(){clearArmed=false;b.textContent="メモをすべて空にする（次の日に使う）"},4000);return}
+  clearArmed=false;b.textContent="メモをすべて空にする（次の日に使う）";
+  store.children=[{id:uid(),name:"",memo:""}];save();renderChildren();toast("空にしました");
+});
+
+/* ---------- voice input ---------- */
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+var rec=null,recCard=null,recBtn=null,wantRec=false,restarts=0,micBroken=false;
+function guideHtml(){
+  var ua=navigator.userAgent||"";
+  if(/iPhone|iPad|iPod|Android/.test(ua))return "<b>上のメモの場所</b>を押すと、キーボードが出ます。<br>キーボードにある <b>マイクのマーク</b> を押して、話してください。";
+  if(/Windows/.test(ua))return "<b>上のメモの場所</b>を押してから、キーボードの <b>Windowsキーを押したまま H</b> を押すと、話して入力できます。";
+  if(/Macintosh|Mac OS/.test(ua))return "<b>上のメモの場所</b>を押してから、キーボードの <b>Fnキーを2回</b> 押すと、話して入力できます。";
+  return "<b>上のメモの場所</b>を押してから、キーボードの <b>マイクのマーク</b> を押して、話してください。";
+}
+function showGuide(el){
+  stopRec();
+  var g=el.querySelector(".guide");g.hidden=false;g.querySelector(".guidetext").innerHTML=guideHtml();
+  var m=el.querySelector(".memoarea");m.focus();
+  try{m.scrollIntoView({behavior:"smooth",block:"center"})}catch(e){}
+}
+function stopRec(){
+  wantRec=false;
+  if(rec){try{rec.stop()}catch(e){}}
+  rec=null;recCard=null;
+  document.querySelectorAll(".micbig").forEach(function(b){b.classList.remove("rec");b.querySelector(".miclabel").textContent="話して入力する"});
+}
+function toggleMic(c,el){
+  if(rec&&recCard===c){c.memo=el.querySelector(".memoarea").value;save();stopRec();return}
+  if(rec)stopRec();
+  if(!SR||micBroken){showGuide(el);return}
+  var area=el.querySelector(".memoarea"),btn=el.querySelector(".micbig");
+  el.querySelector(".guide").hidden=true;
+  var base=area.value?area.value.replace(/\s+$/,"")+"\n":"",fin="";
+  var r;
+  try{r=new SR()}catch(e){micBroken=true;showGuide(el);return}
+  rec=r;recCard=c;wantRec=true;restarts=0;
+  r.lang="ja-JP";r.continuous=true;r.interimResults=true;
+  btn.classList.add("rec");btn.querySelector(".miclabel").textContent="話し終わったら、ここを押す";
+  r.onresult=function(ev){
+    var interim="";
+    for(var i=ev.resultIndex;i<ev.results.length;i++){
+      var t=ev.results[i][0].transcript;
+      if(ev.results[i].isFinal)fin+=t;else interim+=t;
+    }
+    restarts=0;area.value=base+fin+interim;c.memo=area.value;area.scrollTop=area.scrollHeight;
+    if(fin)save();
+  };
+  r.onerror=function(ev){
+    if(ev.error==="no-speech"||ev.error==="aborted")return;
+    micBroken=true;wantRec=false;showGuide(el);
+  };
+  r.onend=function(){
+    if(recCard!==c)return;
+    if(wantRec&&restarts<20){restarts++;try{r.start();return}catch(e){}}
+    c.memo=area.value;save();stopRec();
+  };
+  try{r.start()}catch(e){micBroken=true;showGuide(el)}
+}
+
+/* ---------- settings ---------- */
+function renderRefs(){
+  var box=$("refs");box.innerHTML="";
+  store.refs.forEach(function(r,i){
+    var el=document.createElement("div");el.className="refitem";
+    el.innerHTML=
+      '<div class="rh"><input id="rlabel-'+esc(r.id)+'" aria-label="見本のラベル" placeholder="ラベル（例：5月の記録）" value="'+esc(r.label)+'">'+
+      '<button class="iconbtn del" type="button" aria-label="この見本を消す">消す</button></div>'+
+      '<textarea id="rtext-'+esc(r.id)+'" aria-label="過去の記録" placeholder="過去の支援記録を、そのまま貼り付け">'+esc(r.text)+'</textarea>';
+    el.querySelector("input").addEventListener("input",function(){r.label=this.value;save()});
+    el.querySelector("textarea").addEventListener("input",function(){r.text=this.value;save()});
+    el.querySelector(".del").addEventListener("click",function(){store.refs.splice(i,1);save();renderRefs()});
+    box.appendChild(el);
+  });
+  if(!store.refs.length){
+    var p=document.createElement("p");p.className="note";p.style.textAlign="center";
+    p.textContent="まだ登録がありません。1件貼るだけでも、書き方がそろいます。";box.appendChild(p);
+  }
+}
+function renderSettings(){
+  renderRefs();
+  document.querySelectorAll("#callSeg button").forEach(function(b){b.classList.toggle("on",b.dataset.v===store.callMode)});
+  $("styleNote").value=store.styleNote;
+  $("modelInput").value=store.geminiModel===DEFAULT_MODEL?"":store.geminiModel;
+  $("keyState").textContent=store.geminiKey?"保存済みです（この端末の中だけに入っています）。":"まだ入っていません。";
+}
+$("addRef").addEventListener("click",function(){
+  if(store.refs.length>=MAXREF){toast("見本は"+MAXREF+"件までです");return}
+  store.refs.push({id:uid(),label:"",text:""});save();renderRefs();
+});
+$("styleNote").addEventListener("input",function(){store.styleNote=this.value;save()});
+$("modelInput").addEventListener("input",function(){store.geminiModel=this.value.trim()||DEFAULT_MODEL;save()});
+document.querySelectorAll("#callSeg button").forEach(function(b){
+  b.addEventListener("click",function(){store.callMode=b.dataset.v;save();renderSettings()});
+});
+$("keySave").addEventListener("click",function(){
+  var v=$("keyInput").value.trim();
+  if(!v){toast("キーを貼り付けてください");return}
+  if(v.length<20||/\s/.test(v)){toast("キーの形が違うようです。余計な空白や文字が入っていないか確認してください");return}
+  store.geminiKey=v;save();$("keyInput").value="";renderSettings();toast("保存しました");
+});
+$("keyDel").addEventListener("click",function(){store.geminiKey="";save();renderSettings();toast("キーを消しました")});
+$("expCopy").addEventListener("click",function(){
+  copyText(JSON.stringify({refs:store.refs,callMode:store.callMode,styleNote:store.styleNote}),this);
+});
+$("impBtn").addEventListener("click",function(){
+  var raw=$("importArea").value.trim();
+  if(!raw){toast("コピーした設定を貼り付けてください");return}
+  try{
+    var d=JSON.parse(raw);
+    if(!d||typeof d!=="object"||!Array.isArray(d.refs))throw new Error("x");
+    store.refs=d.refs.slice(0,MAXREF).map(function(r){return{id:r.id||uid(),label:String(r.label||""),text:String(r.text||"")}});
+    if(d.callMode)store.callMode=d.callMode;
+    if(typeof d.styleNote==="string")store.styleNote=d.styleNote;
+    save();renderSettings();$("importArea").value="";toast("読み込みました");
+  }catch(e){toast("読み込めませんでした。形式を確認してください")}
+});
+function openSettings(){stopRec();$("view-main").classList.remove("active");$("view-set").classList.add("active");$("dock").hidden=true;window.scrollTo(0,0)}
+$("openSet").addEventListener("click",openSettings);
+$("closeSet").addEventListener("click",function(){$("view-set").classList.remove("active");$("view-main").classList.add("active");$("dock").hidden=false;window.scrollTo(0,0)});
+
+/* ---------- prompt ---------- */
+function callText(){
+  if(store.callMode==="chan")return "子どもは、下の名前に「ちゃん」をつけて呼んでください。";
+  if(store.callMode==="kun")return "子どもは、下の名前に「くん」をつけて呼んでください。";
+  if(store.callMode==="san")return "子どもは、下の名前に「さん」をつけて呼んでください。";
+  return "子どもの呼び方は、メモの中で使われている呼び方（ちゃん・くん・さん）に合わせてください。メモから分からないときは「さん」とし、その子の記録の末尾に［要確認］として呼び方を短く質問してください。";
+}
+var OPENERS=["その場面の様子から書き出す","本人の言葉やつぶやきから書き出す","できるようになったこと（成長）から書き出す","活動のきっかけや前後の流れから書き出す","表情やしぐさから書き出す","つまずいた場面と、その後の変化から書き出す"];
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+function usedCards(){return store.children.filter(function(c){return(c.memo||"").trim()})}
+function buildPrompt(){
+  var cs=usedCards(),P=[];
+  P.push("あなたは、保育・療育の現場で支援記録を書く職員を手伝うアシスタントです。");
+  P.push("次の「今日のメモ」をもとに、子どもごとの支援記録を書いてください。\n");
+  P.push("【入力について】");
+  P.push("・メモは話し言葉や走り書きです。言い直しや順序の前後があっても、意図をくみ取って整理してください。");
+  P.push("・子どもごとに、別々の記録として書いてください。\n");
+  P.push("【書き方のルール】");
+  P.push("・メモにない事実を、勝手に付け足さないでください。");
+  P.push("・足りない情報や確認したい点は、その子の記録の末尾に「［要確認］」として短く質問してください。");
+  P.push("・成長は「何がどう変わったか」を、具体的な行動で書いてください。");
+  P.push("・つまずいた場面は、責める書き方をせず、そのときの状況と、今後の支援の方向性をつなげて書いてください。");
+  P.push("・診断名や性格の決めつけなど、断定的な表現は避けてください。");
+  P.push("・絵文字は、内容に合うものがあるときだけ、1〜3個を目安に、かわいくさりげなく添えてください。合うものがなければ不要です。");
+  P.push("・"+callText()+"名字や住所など、メモに出てこない個人情報は書き足さないでください。\n");
+  var refs=store.refs.filter(function(r){return(r.text||"").trim()});
+  if(refs.length){
+    P.push("【スタイルの見本】");
+    P.push("次の過去の記録は、文体・長さ・構成・視点を知るための見本です。文章をそのままコピーしたり、決まり文句を使い回したりしないでください。");
+    P.push("書き出し・文末・言い回し・構成は人ごとに変えて、並べたときに似通わないようにしてください。\n");
+    refs.forEach(function(r,i){P.push("― 見本"+(i+1)+((r.label||"").trim()?"（"+r.label.trim()+"）":"")+" ―");P.push(r.text.trim()+"\n")});
+  }
+  if((store.styleNote||"").trim()){P.push("【書き方の追加メモ】");P.push(store.styleNote.trim()+"\n")}
+  var hints=shuffle(OPENERS);
+  P.push("【人ごとの書き出しの目安】");
+  P.push("書き出しが重ならないよう、次の目安を参考にしてください。内容に合わないときは変えてかまいません。");
+  cs.forEach(function(c,i){P.push("・"+((c.name||"").trim()||"名前未入力の子")+"："+hints[i%hints.length])});
+  P.push("");
+  P.push("【今日のメモ】");
+  cs.forEach(function(c){P.push("▼"+((c.name||"").trim()||"（名前未入力）"));P.push(c.memo.trim());P.push("")});
+  if(cs.some(function(c){return !(c.name||"").trim()}))P.push("名前が未入力の子は、見出しを「（名前未入力）」とし、末尾に［要確認］で名前を質問してください。\n");
+  P.push("【出力の形】");
+  P.push("・子どもごとに「◆名前＋呼び方」の見出しをつけ、その下に記録本文を書いてください。");
+  P.push("・前置きや説明は書かず、記録だけを出力してください。");
+  if(refs.length)P.push("・文量は、見本と同じくらいにしてください。");
+  return P.join("\n");
+}
+function composeLocal(){
+  var suf=store.callMode==="chan"?"ちゃん":store.callMode==="kun"?"くん":"さん";
+  var out=[dateHead()];
+  usedCards().forEach(function(c){
+    var n=(c.name||"").trim();
+    out.push("");out.push("◆"+(n?n+suf:"（名前未入力）"));out.push(c.memo.trim());
+    if(!n)out.push("［要確認］お名前を確認");
+  });
+  return out.join("\n");
+}
+
+/* ---------- Gemini ---------- */
+var sheet=$("sheet"),out=$("outArea"),lastPrompt="",lastResult="",busy=false,gen=0;
+function openSheet(){sheet.hidden=false;document.body.style.overflow="hidden"}
+function closeSheet(){gen++;setBusy(false);sheet.hidden=true;document.body.style.overflow=""}
+$("sheetClose").addEventListener("click",closeSheet);
+sheet.addEventListener("click",function(ev){if(ev.target===sheet)closeSheet()});
+function setBusy(b){
+  busy=b;$("loading").hidden=!b;
+  $("againBtn").disabled=b;$("followBtn").disabled=b;$("copyBtn").disabled=b;
+}
+function explain(status,msg){
+  if(status===400&&/API key/i.test(msg))return "キーが正しくないようです。設定で入れ直してください。";
+  if(status===401||status===403)return "このキーでは使えませんでした。設定でキーを確認してください。";
+  if(status===429)return "無料枠の上限に達しました。少し時間をおいてから、もう一度試してください。";
+  if(status===404)return "使えるモデルが見つかりませんでした。設定の「詳しい設定」でモデル名を確認してください。";
+  if(status>=500)return "Gemini側が混み合っています。少し待って、もう一度試してください。";
+  return "うまく書けませんでした。";
+}
+function callGemini(prompt){
+  var my=++gen;
+  var chain=[store.geminiModel].concat(FALLBACK_MODELS).filter(function(m,i,a){return m&&a.indexOf(m)===i});
+  var idx=0,listed=false;
+  function findModel(){
+    /* 決めたモデル名が使えないとき、キーで使えるFlash系のモデルを探す */
+    return fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200&key="+encodeURIComponent(store.geminiKey))
+      .then(function(r){return r.json()}).then(function(j){
+        var names=(j.models||[]).filter(function(m){return (m.supportedGenerationMethods||[]).indexOf("generateContent")>=0})
+          .map(function(m){return String(m.name||"").replace(/^models\//,"")})
+          .filter(function(n){return /^gemini-[\d.]+-flash$/.test(n)});
+        names.sort(function(a,b){return parseFloat(b.split("-")[1])-parseFloat(a.split("-")[1])});
+        return names.filter(function(n){return chain.indexOf(n)<0})[0]||"";
+      }).catch(function(){return ""});
+  }
+  return new Promise(function(resolve,reject){
+    function attempt(){
+      var model=chain[idx];
+      fetch("https://generativelanguage.googleapis.com/v1beta/models/"+encodeURIComponent(model)+":generateContent?key="+encodeURIComponent(store.geminiKey),{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({contents:[{role:"user",parts:[{text:prompt}]}],generationConfig:{temperature:1}})
+      }).then(function(r){
+        return r.json().catch(function(){return{}}).then(function(j){
+          if(my!==gen)return;
+          if(!r.ok){
+            var msg=(j&&j.error&&j.error.message)||("HTTP "+r.status);
+            if(r.status===404||/no longer available|not found|is not supported|unsupported/i.test(msg)){
+              if(idx<chain.length-1){idx++;attempt();return}
+              if(!listed){
+                listed=true;
+                return findModel().then(function(n){
+                  if(my!==gen)return;
+                  if(n){chain.push(n);idx=chain.length-1;store.geminiModel=n;save();attempt();return}
+                  var e0=new Error(msg);e0.status=r.status;reject(e0);
+                });
+              }
+            }
+            var e=new Error(msg);e.status=r.status;throw e;
+          }
+          var c=j.candidates&&j.candidates[0];
+          var txt=c&&c.content&&c.content.parts?c.content.parts.map(function(p){return p.text||""}).join(""):"";
+          if(!txt){
+            var why=(j.promptFeedback&&j.promptFeedback.blockReason)||(c&&c.finishReason)||"";
+            var e2=new Error("回答が空でした"+(why?"（"+why+"）":""));e2.status=0;e2.blocked=true;throw e2;
+          }
+          if(model!==store.geminiModel&&model!==DEFAULT_MODEL){/* keep user's setting */}
+          resolve(txt.trim());
+        });
+      }).catch(function(e){
+        if(my!==gen)return;
+        if(e&&e.status===undefined)e.status=-1;
+        reject(e);
+      });
+    }
+    attempt();
+  });
+}
+function run(prompt,isFollow){
+  if(!store.geminiKey){
+    out.value=composeLocal();$("followRow").hidden=true;
+    $("sheetHint").textContent="Geminiのキーがまだ入っていません。右上の「設定」でキーを入れると、自動で書けます。いまは、メモを並べた形で表示しています。";
+    return;
+  }
+  setBusy(true);
+  var myGen=gen+1;
+  callGemini(prompt).then(function(txt){
+    lastResult=txt;out.value=dateHead()+"\n\n"+txt;
+    $("followRow").hidden=false;
+    $("sheetHint").textContent="できました。直したい点は下の欄に書いて「修正」を押してください。文章は直接書き換えられます。";
+  }).catch(function(e){
+    var detail=e&&e.status===-1?"インターネットにつながっていないか、Geminiに届きませんでした。":explain(e&&e.status,e&&e.message||"");
+    if(e&&e.blocked)detail="Geminiが内容を書けませんでした（"+(e.message||"")+"）。メモの表現を見直して、もう一度試してください。";
+    if(!isFollow)out.value=composeLocal();
+    $("sheetHint").textContent=detail+(isFollow?"":" いまは、メモを並べた形で表示しています。")+" （詳細："+((e&&e.message)||"不明")+"）";
+    toast("Geminiで書けませんでした");
+  }).then(function(){setBusy(false)});
+}
+function generate(){
+  lastPrompt=buildPrompt();lastResult="";$("followRow").hidden=true;
+  out.value="";$("sheetHint").textContent="";
+  run(lastPrompt,false);
+}
+$("fabBtn").addEventListener("click",function(){
+  stopRec();
+  if(!usedCards().length){toast("先に、メモを入れてください");return}
+  openSheet();generate();
+});
+$("againBtn").addEventListener("click",function(){
+  if(busy)return;
+  if(!usedCards().length){toast("メモが空です");return}
+  if(!store.geminiKey){toast("右上の「設定」でGeminiのキーを入れてください")}
+  generate();
+});
+$("followBtn").addEventListener("click",function(){
+  var f=$("followInput").value.trim();
+  if(!f||busy)return;
+  if(!lastResult){toast("先に「もう一度書く」を押してください");return}
+  $("followInput").value="";
+  var req="まず、次の過去のやりとりを読んでください。\n\n【最初のお願い】\n"+lastPrompt+"\n\n【あなたの回答】\n"+lastResult+"\n\n【修正依頼】\n"+f+"\n\n修正した全員分の記録だけを、同じ形で出力してください。前置きは不要です。";
+  run(req,true);
+});
+$("followInput").addEventListener("keydown",function(ev){if(ev.key==="Enter"&&!ev.isComposing)$("followBtn").click()});
+
+function copyText(txt,btn){
+  function ok(){toast("コピーしました");if(btn){var o=btn.textContent;btn.textContent="コピーしました";setTimeout(function(){btn.textContent=o},1600)}}
+  function fb(){
+    var t=document.createElement("textarea");t.value=txt;t.style.position="fixed";t.style.opacity="0";document.body.appendChild(t);t.select();
+    try{document.execCommand("copy");ok()}catch(e){toast("コピーできませんでした。文章を選んで手動でコピーしてください")}
+    t.remove();
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(ok,fb)}else fb();
+}
+$("copyBtn").addEventListener("click",function(){copyText(out.value,this)});
+
+/* ---------- init ---------- */
+load();renderChildren();renderSettings();
+})();
+</script>
+</body>
+</html>
